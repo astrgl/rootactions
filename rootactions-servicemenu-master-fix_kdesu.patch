@@ -1,0 +1,198 @@
+diff -urN rootactions-servicemenu-master/usr/bin/rootactions-servicemenu.pl rootactions-servicemenu-master-patched/usr/bin/rootactions-servicemenu.pl
+--- rootactions-servicemenu-master/usr/bin/rootactions-servicemenu.pl	2016-04-27 15:03:15.000000000 +0300
++++ rootactions-servicemenu-master-patched/usr/bin/rootactions-servicemenu.pl	2016-03-20 19:06:48.000000000 +0300
+@@ -3,6 +3,8 @@
+ eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
+     if 0; # not running under some shell
+ 
++#VERSION:2.9
++    
+ #----IMPORTANT--------------------------------------------------------
+ 
+ # This script may contain bugs so use with caution.
+@@ -876,23 +892,23 @@
+ # Application checks
+ &get_kde_path ;
+ 
+-# Check whether kdesudo is installed, and use it instead of kdesu to get root privileges.
+-#if ( `which kdesudo` ) {
+-#	$SUCOMMAND = "$KDEBINPATH"."kdesudo -d --noignorebutton --"}
+-#elsif ( `which kdesu` ) {
+-#	$SUCOMMAND = "$KDEBINPATH"."kdesu -d -c"}
+-if ( `which pkexec` ) {
+-	$SUCOMMAND = "pkexec"}
+-else { $SUCOMMAND = "xdg-su -c"}
++# Test for the working method to get root access on the host 
++if ( `which kdesudo` ) {
++	$SUCOMMAND = "$KDEBINPATH"."kdesu5 -d -c"}
++elsif ( `which kdesu` ) {
++	$SUCOMMAND = "kdesu5 -d -c"}
++elsif ( `which xdg-su` ) {
++        $SUCOMMAND = "kdesu5 -d -c"}
++else { $SUCOMMAND = "`kf5-config --path libexec`kf5/kdesu -c"}
+ 
+ $DIALOGCOMMAND = "$KDEBINPATH"."kdialog" ;
++$CONFIGCOMMAND = "$KDEBINPATH"."kreadconfig" ;
+ 
+ # Check whether dbus-run-session (dbus 1.8.x) is available
+ $DBUSRUN = "" ;
+ if ( `which dbus-run-session` ) {
+ 	$DBUSRUN = "dbus-run-session"}
+ 
+-
+ #---Start root actions---
+ $EXECNAME = $0 ;
+ $ACTION = shift @ARGV ;
+@@ -903,7 +919,7 @@
+ sub root_konsole_here {
+ 	$APPNAME = shift @ARGV ;
+ 	$WORKDIR = shift @ARGV ;
+-	exec "$SUCOMMAND \'$EXECNAME\' do_root_konsole \'$APPNAME\' \'$WORKDIR\'";
++	exec "$SUCOMMAND \"\'$EXECNAME\' do_root_konsole \'$APPNAME\' \'$WORKDIR\'\"";
+ 	exit $?;
+ }
+ 
+@@ -921,8 +937,15 @@
+ 	   
+ 	   $APPNAME =~ tr/a-z/A-Z/ ;
+ 	   $WORKDIR = shift @ARGV ;
+-	   exec "$TERMINAL --nofork --workdir \'$WORKDIR\'" ;
+-	   exit $?;
++	   
++	   # Fixed bug with qt5 applications not opening
++           # because they don't provide the kde-options like "--caption" any more
++           $OPTTEST = system "$TERMINAL --help-kde" ;
++           if ( $OPTTEST eq 0 ) {
++              exec "$TERMINAL --caption \"$APPNAME $ROOTREMINDER\" --nofork --workdir \'$WORKDIR\'" ; }
++           else {
++              exec "$TERMINAL --nofork --workdir \'$WORKDIR\'" ; }
++           exit $?;
+ 	}
+ }
+ #---End root konsole subroutines---
+@@ -934,7 +957,7 @@
+ 	$APPNAME = `$DIALOGCOMMAND --title "$OPENTITLE" --inputbox "$OPENMSG" program` ;
+ 	if ( $? eq 0 ) {
+ 	   chomp $APPNAME ;
+-      	   exec "$SUCOMMAND \'$EXECNAME\' do_open_with \'$APPNAME\' \'$TARGET\'";
++      	   exec "$SUCOMMAND \"\'$EXECNAME\' do_open_with \'$APPNAME\' \'$TARGET\'\"";
+ 	   exit $?;
+ 	}
+ }
+@@ -944,7 +967,7 @@
+ 	$TARGET = join("' '", @ARGV) ;
+ 
+ 	if ( $APPNAME eq "defaultfm" ) {
+-	     chomp($APPNAME = `xdg-mime query default inode/directory | sed s/.desktop// | sed s/kde4-//`);
++	     chomp($APPNAME = `xdg-mime query default inode/directory | sed s/.desktop// | sed s/kde4-// | sed s/org.kde.//`);
+ 	     if ( $APPNAME eq "kfmclient_dir" ) { $APPNAME = "konqueror"; }
+ 	     #Check that file manager is available
+ 	     system "which $APPNAME" ;
+@@ -954,7 +977,7 @@
+ 	     }
+ 	}
+ 	elsif ( $APPNAME eq "defaultte" ) {
+-	     chomp($APPNAME = `xdg-mime query default text/plain | sed s/.desktop// | sed s/kde4-//`);
++	     chomp($APPNAME = `xdg-mime query default text/plain | sed s/.desktop// | sed s/kde4-// | sed s/org.kde.//`);
+ 	     system "which $APPNAME" ;
+ 	     if (( $? ne 0 ) || ( $APPNAME eq "" )) { 
+ 		if ( `which kate` ) { $APPNAME = "kate"; } #kate as fallback if available
+@@ -968,7 +991,7 @@
+ 		  $APPNAME = "kwrite"; }
+ 	}
+ 
+-	exec "$SUCOMMAND \'$EXECNAME\' do_open_with \'$APPNAME\' \'$TARGET\'";
++	exec "$SUCOMMAND \"\'$EXECNAME\' do_open_with \'$APPNAME\' \'$TARGET\'\"";
+ 	exit $?; 
+ }
+ 
+@@ -996,7 +1019,7 @@
+            if ( $OPTTEST eq 0 ) {
+               exec "$DBUSRUN $CPROGRAM --caption \"$APPNAME $ROOTREMINDER\" \'$TARGET\'" ; }
+            else {
+-              exec "KDE_SESSION_VERSION=5 KDE_FULL_SESSION=true $DBUSRUN $CPROGRAM \'$TARGET\'" ; }
++              exec "$DBUSRUN $CPROGRAM \'$TARGET\'" ; }
+            exit $?;
+         }
+ }
+@@ -1010,7 +1033,7 @@
+ 	   $NEWNAME = `$DIALOGCOMMAND --title "$COPYTITLE" --inputbox "$COPYMSG" \'$OLDNAME\'` ;
+ 	   chop $NEWNAME;
+ 	   if ( $? eq 0 && $OLDNAME ne $NEWNAME ) {
+-	      exec "$SUCOMMAND \'$EXECNAME\' do_copy \'$OLDNAME\' \'$NEWNAME\'";
++	      exec "$SUCOMMAND \"\'$EXECNAME\' do_copy \'$OLDNAME\' \'$NEWNAME\'\"";
+ 	      exit $?;
+ 
+ 	   }
+@@ -1040,7 +1063,7 @@
+ 	$TARGET = join("' '", @ARGV) ;
+ 	chomp($RENAMERPATH = `which $BATCHRENAMER`);	
+ 	if ( $#ARGV > 0 && -x $RENAMERPATH ) {
+-	   exec "$SUCOMMAND \'$EXECNAME\' do_open_with \'$BATCHRENAMER\' \'$TARGET\'";
++	   exec "$SUCOMMAND \"\'$EXECNAME\' do_open_with \'$BATCHRENAMER\' \'$TARGET\'\"";
+ 	   exit $?;
+ 	}
+ 	# else we'll use a simple rename script
+@@ -1050,7 +1073,7 @@
+ 	   $NEWNAME = `$DIALOGCOMMAND --title "$RENAMETITLE" --inputbox "$RENAMEMSG" \'$OLDNAME\'` ;
+ 	   chop $NEWNAME;
+ 	   if ( $? eq 0 && $OLDNAME ne $NEWNAME ) {
+-	      exec "$SUCOMMAND \'$EXECNAME\' do_rename \'$OLDNAME\' \'$NEWNAME\'";
++	      exec "$SUCOMMAND \"\'$EXECNAME\' do_rename \'$OLDNAME\' \'$NEWNAME\'\"";
+ 	      exit $?;
+ 	   }
+ 	}
+@@ -1075,7 +1098,7 @@
+ 
+ #---Compress subroutines---
+ sub root_compress {
+-	exec "$SUCOMMAND \'$EXECNAME\' do_compress \'$TARGET\'";
++	exec "$SUCOMMAND \"\'$EXECNAME\' do_compress \'$TARGET\'\"";
+ }
+ 
+ sub do_compress {
+@@ -1102,7 +1125,7 @@
+ 	   # kdesu will run the command as regular user if 'Ignore' is chosen from kdesu dialog.
+ 	   # To prevent unwanted deletion of files, we'll run 'do_delete' instead of 'rm -r', 'do delete'
+ 	   # will exit if it's run as normal user, therefore the files writable for user are safe when clicking 'Ignore'
+-	   exec "$SUCOMMAND \'$EXECNAME\' do_delete \'$TARGET\'";
++	   exec "$SUCOMMAND \"\'$EXECNAME\' do_delete \'$TARGET\'\"";
+ 	}
+ }
+ 
+@@ -1130,7 +1153,7 @@
+         }
+ 
+ 	# Same as with delete, we don't want kdesu to run 'chown' when 'Ignore' is pressed in the kdesu dialog, so we use 'do_ownership' instead
+-	exec "$SUCOMMAND \'$EXECNAME\' do_ownership \'$RECURSIVE\' 0:0 \'$TARGET\'";
++	exec "$SUCOMMAND \"\'$EXECNAME\' do_ownership \'$RECURSIVE\' 0:0 \'$TARGET\'\"";
+ 	exit $?;
+ }
+ 
+@@ -1148,7 +1171,7 @@
+ 
+ 	#Create a list of user GIDs, so we can pick only the primary group
+ 	@GROUPS = split ' ', $);
+-	exec "$SUCOMMAND \'$EXECNAME\' do_ownership \'$RECURSIVE\' $>:$GROUPS[0] \'$TARGET\'";
++	exec "$SUCOMMAND \"\'$EXECNAME\' do_ownership \'$RECURSIVE\' $>:$GROUPS[0] \'$TARGET\'\"";
+ 	exit $?;
+ }
+ 
+@@ -1169,7 +1192,7 @@
+ 
+ 	if ( $? eq 0 ) {
+ 	   chop $UIDGID;
+-	   exec "$SUCOMMAND \'$EXECNAME\' do_ownership \'$RECURSIVE\' \'$UIDGID\' \'$TARGET\'";
++	   exec "$SUCOMMAND \"\'$EXECNAME\' do_ownership \'$RECURSIVE\' \'$UIDGID\' \'$TARGET\'\"";
+ 	   exit $?;
+ 	}
+ }
+@@ -1284,7 +1307,7 @@
+ 		system "$DIALOGCOMMAND --title \'$SPCTITLE\' --warningcontinuecancel \'$SPCMSG\'";
+ 	}
+ 	if ( $? eq 0 ) {
+-	      exec "$SUCOMMAND \'$EXECNAME\' do_permissions \'$RECURSIVE\' \'$CHMOD\' \'$TARGET\'";
++	      exec "$SUCOMMAND \"\'$EXECNAME\' do_permissions \'$RECURSIVE\' \'$CHMOD\' \'$TARGET\'\"";
+ 	      exit $?;
+ 	}
+ }
