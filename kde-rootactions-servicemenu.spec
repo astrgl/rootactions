@@ -19,10 +19,10 @@ filemanager.
 
 %files
 %doc README changelog
-%{_kde5_bindir}/rootactions-servicemenu.pl
-%{_kde5_services}/ServiceMenus/10-rootactionsfolders.desktop
-%{_kde5_services}/ServiceMenus/11-rootactionsfiles.desktop
-%{_kde5_datadir}/polkit-1/action
+%{_kde_bindir}/rootactions-servicemenu.pl
+%{_kde_services}/ServiceMenus/10-rootactionsfolders.desktop
+%{_kde_services}/ServiceMenus/11-rootactionsfiles.desktop
+%{_kde_datadir}/polkit-1/action
 %{_datadir}/kde4/services/ServiceMenus/10-rootactionsfolders.desktop
 %{_datadir}/kde4/services/ServiceMenus/11-rootactionsfiles.desktop
 
@@ -41,8 +41,8 @@ install -m755 usr/bin/rootactions-servicemenu.pl %{buildroot}%{_bindir}
 install -d -m755 %{buildroot}%{_datadir}/kde4/services/ServiceMenus
 install -m644 usr/share/kde4/services/ServiceMenus/* %{buildroot}%{_datadir}/kde4/services/ServiceMenus
 
-install -d -m755 %{buildroot}%{_kde5_services}/ServiceMenus
-install -m644 usr/share/kservices5/ServiceMenus/* %{buildroot}%{_kde5_services}/ServiceMenus
+install -d -m755 %{buildroot}%{_kde_services}/ServiceMenus
+install -m644 usr/share/kservices5/ServiceMenus/* %{buildroot}%{_kde_services}/ServiceMenus
 
-install -d -m755 %{buildroot}%{_kde5_datadir}/polkit-1/actions
-install -m644 usr/share/polkit-1/actions/* %{buildroot}%{_kde5_datadir}/polkit-1/action
+install -d -m755 %{buildroot}%{_kde_datadir}/polkit-1/actions
+install -m644 usr/share/polkit-1/actions/* %{buildroot}%{_kde_datadir}/polkit-1/action
