@@ -10,7 +10,6 @@ URL:		http://www.kde-apps.org/content/show.php/?content=48411
 Source0:	rootactions-servicemenu-master.zip
 # adapt for kdesu in %{_libdir}/kde4/libexec/kdesu
 Patch0:		rootactions-servicemenu-master-fix_kdesu.patch
-BuildRequires:	kde5-macros
 BuildArch:	noarch
 
 %description
