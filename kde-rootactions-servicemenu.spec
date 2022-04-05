@@ -12,10 +12,11 @@ Summary: Root actions for Dolphin context menu
 Url: http://www.kde-look.org/content/show.php/Root+Actions+Servicemenu?content=48411
 Source:%{oname}_servicemenu_%version.tar.gz
 BuildRoot: %{_tmppath}/%{oname}-%{version}-%{release}-buildroot
+BuildArch:	noarch
 
 %description
 Root Actions servicemenu provides a convenient way to perform
-several actions 'as root', from the right-click context menu in KDE
+several actions 'as root', from the right-click context menu in Dolphin
 filemanager..
 
 %prep
